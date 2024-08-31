@@ -1,4 +1,6 @@
 const pointsTable = [100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5];
+const ordemCategorias = ["Adaptado", "Mirim Masculino", "Mirim Feminino", "Estreantes", "Iniciante Masculino", "Iniciante Feminino", "Intermediario", "Avancado", "Feminino", "Open", "Profissional", "PRO Event"];
+
 
 function parseCSV(file, callback) {
     const reader = new FileReader();
@@ -62,7 +64,12 @@ async function calculateRanking() {
 
         const stageData = await parseCSVasync(stageFile);
 
-        stageData?.slice(1).forEach(row => {
+        // reordena na ordem certa das categorias
+        const stageDataSorted = stageData.slice(1).sort((a, b) => 
+            ordemCategorias.indexOf(a[0]) - ordemCategorias.indexOf(b[0])
+        );
+
+        stageDataSorted.forEach(row => {
             const division = row[0];
             const athlete = row[1];
             const place = parseInt(row[2]);
