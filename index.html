@@ -10,39 +10,52 @@
     <div class="noPrint">
       <h1>Gerador de Ranking da ABW</h1>
 
-      <label for="affiliated">Lista de atletas filiados (TicketSports):</label>
-      <input type="file" id="filiados" /><br />
-      <input
-        type="text"
-        id="nomeCircuito"
-        value="Circuito Brasileiro de Wakeboard"
-      /><br /><br />
+      <div class="etapasGroup">
+        <div class="etapaGroup">
+          <label for="affiliated">
+            Lista de atletas filiados (TicketSports):
+          </label>
+          <input type="file" id="filiados" />
+          <input
+          type="text"
+          id="nomeCircuito"
+          value="Circuito Brasileiro de Wakeboard"
+        />
 
-      <label for="etapa1">Resultados 1ª Etapa (LiveHeats):</label>
-      <input type="file" id="etapa1" /><br />
-      <input type="text" id="etapa1nome" /><br /><br />
-
-      <label for="etapa2">Resultados 2ª Etapa (LiveHeats):</label>
-      <input type="file" id="etapa2" /><br />
-      <input type="text" id="etapa2nome" /><br /><br />
-
-      <label for="etapa3">Resultados 3ª Etapa (LiveHeats):</label>
-      <input type="file" id="etapa3" /><br />
-      <input type="text" id="etapa3nome" /><br /><br />
-
-      <label for="etapa4">Resultados 4ª Etapa (LiveHeats):</label>
-      <input type="file" id="etapa4" /><br />
-      <input type="text" id="etapa4nome" /><br /><br />
-
+        </div>
+        <div class="etapaGroup">
+          <label for="etapa1">Resultados 1ª Etapa (LiveHeats):</label>
+          <input type="file" id="etapa1" />
+          <input type="text" id="etapa1nome" />
+        </div>
+        <div class="etapaGroup">
+          <label for="etapa2">Resultados 2ª Etapa (LiveHeats):</label>
+          <input type="file" id="etapa2" />
+          <input type="text" id="etapa2nome" />
+        </div>
+        <div class="etapaGroup">
+          <label for="etapa3">Resultados 3ª Etapa (LiveHeats):</label>
+          <input type="file" id="etapa3" />
+          <input type="text" id="etapa3nome" />
+        </div>
+        <div class="etapaGroup">
+          <label for="etapa4">Resultados 4ª Etapa (LiveHeats):</label>
+          <input type="file" id="etapa4" />
+          <input type="text" id="etapa4nome" />
+        </div>
+      </div>
       <button onclick="calculateRanking()">Calcular ranking!</button>
     </div>
     <div class="titulo">
-        <img src="logo_abw_azul.svg">
-        <h1 id="nomeCircuitoOutput"></h1>
+      <img src="logo_abw_azul.svg" />
+      <h1 id="nomeCircuitoOutput"></h1>
     </div>
     <div id="output"></div>
     <div>* nota transferida de outra categoria (desconto de 30%)</div>
-    <div><span class="descarte">100</span> Nota descartada (menor nota entre as 4 etapas)</div>
+    <div>
+      <span class="descarte">100</span> Nota descartada (menor nota entre as 4
+      etapas)
+    </div>
 
     <script src="ranking.js"></script>
   </body>
