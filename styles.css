@@ -1,0 +1,64 @@
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th,
+td {
+  border: 1px solid black;
+  padding: 2px;
+  text-align: center;
+  width: 10%;
+  overflow: hidden;
+}
+
+/* fundo do título */
+th {
+    background: #b6b6b6;
+}
+
+/* cores alternadas */
+tr:nth-child(odd) {
+    background: #e9e9e9;
+}
+
+
+/* largura da coluna de posição */
+th:nth-child(2), td:nth-child(2) {
+    width: 0%;
+}
+
+/* largura da coluna de nome */
+th:nth-child(3), td:nth-child(3) {
+    width: 20%;
+}
+
+.titulo {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.titulo img {
+    width: 150px;
+}
+
+.descarte {
+    text-decoration: line-through;
+    opacity: 0.5;
+    color: red;
+}
+
+@media print {
+  .noPrint {
+    display: none !important;
+  }
+  div, table {
+    break-inside: avoid;
+  }
+  table {
+    font-size: 10px;
+  }
+}

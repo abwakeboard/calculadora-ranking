@@ -117,10 +117,7 @@ function displayRankings(rankings) {
     const output = document.getElementById('output');
     output.innerHTML = '';
 
-    // adiciona título
-    const titulo = document.createElement('h1');
-    titulo.innerHTML = nomeCircuito.value;
-    output.appendChild(titulo);
+    nomeCircuitoOutput.innerHTML = nomeCircuito.value;
 
     // processa cada uma das divisões
     for (const categoria in rankings) {
@@ -128,6 +125,7 @@ function displayRankings(rankings) {
         const headerRow = document.createElement('tr');
         headerRow.innerHTML = `
             <th>Categoria</th>
+            <th>Posição</th>
             <th>Nome</th>
             <th>1ª Etapa:<br><span class='nomeEtapa'>${etapa1nome.value}</span></th>
             <th>2ª Etapa:<br><span class='nomeEtapa'>${etapa2nome.value}</span></th>
@@ -162,6 +160,7 @@ function displayRankings(rankings) {
 
         console.log(`Atletas da categoria ${categoria} em ordem:`, atletasSorted);
 
+        let posicao = 1;
         atletasSorted.forEach(([nomeAtleta, data]) => {
             const row = document.createElement('tr');
             const etapas = data.etapas;
@@ -171,16 +170,18 @@ function displayRankings(rankings) {
             const etapaCells = etapas.map((etapa, index) => {
                 const notaArredondada = roundIfDecimal(etapa);
                 const asterisco = data.transferencias && data.transferencias.includes(index) ? `*` : ``; // adiciona asterisco se a nota foi uma trasnferência de outra categoria
-                return index == data.indexDescarte ? `<td class="strikethrough">${notaArredondada}${asterisco}</td>` : `<td>${notaArredondada}${asterisco}</td>`;
+                return index == data.indexDescarte ? `<td class="descarte">${notaArredondada}${asterisco}</td>` : `<td>${notaArredondada}${asterisco}</td>`;
             }).join('');
 
             row.innerHTML = `
                 <td>${categoria}</td>
+                <td>${posicao}</td>
                 <td>${nomeAtleta}</td>
                 ${etapaCells}
                 <td>${pontosTotal}</td>
             `;
             table.appendChild(row);
+            posicao++;
         });
 
         output.appendChild(table);
