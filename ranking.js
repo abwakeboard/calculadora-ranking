@@ -123,7 +123,7 @@ function displayRankings(rankings) {
     output.appendChild(titulo);
 
     // processa cada uma das divisões
-    for (const division in rankings) {
+    for (const categoria in rankings) {
         const table = document.createElement('table');
         const headerRow = document.createElement('tr');
         headerRow.innerHTML = `
@@ -137,9 +137,30 @@ function displayRankings(rankings) {
         `;
         table.appendChild(headerRow);
 
-        const atletasSorted = Object.entries(rankings[division]).sort((a, b) => b[1].pontosTotal - a[1].pontosTotal);
+        // vamos ordenar o ranking
+        const atletasSorted = Object.entries(rankings[categoria]).sort((a, b) => {
+            // Primeiro, compara o total de pontos. Quem tem mais pontos fica na frente
+            const pontosDiff = b[1].pontosTotal - a[1].pontosTotal;
+            if (pontosDiff !== 0) return pontosDiff;
+        
+            // se empatar pelo total de pontos, vamos comparar os valores individuais de cada etapa.
+            // o atleta que tiver uma pontuação maior em uma única etapa fica na frente
 
-        console.log(`sortedAthletes`, atletasSorted);
+            // Vamos ordenar o valor das etapas em ordem descrescente:
+            const etapasA = [...a[1].etapas].sort((x, y) => y - x);
+            const etapasB = [...b[1].etapas].sort((x, y) => y - x);
+        
+            // agora vamos comparar os valores individuais de cada uma das etapas.
+            for (let i = 0; i < etapasA.length; i++) {
+                const diff = etapasB[i] - etapasA[i];
+                if (diff !== 0) return diff; // Se um valor for maior do que o outro, retorna isso como a ordem final
+            }
+        
+            // Se todos os valores forem iguais, mantém a ordem. Em teoria isso é impossível, mas vai que né.
+            return 0;
+        });
+
+        console.log(`Atletas da categoria ${categoria} em ordem:`, atletasSorted);
 
         atletasSorted.forEach(([nomeAtleta, data]) => {
             const row = document.createElement('tr');
@@ -154,7 +175,7 @@ function displayRankings(rankings) {
             }).join('');
 
             row.innerHTML = `
-                <td>${division}</td>
+                <td>${categoria}</td>
                 <td>${nomeAtleta}</td>
                 ${etapaCells}
                 <td>${pontosTotal}</td>
