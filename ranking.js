@@ -35,7 +35,7 @@ async function calculateRanking() {
     }
 
     const filiadosData = await parseCSVasync(filiadosInput);
-    const filiadosAtletas = new Set(filiadosData.slice(1).map(row => row[0])); // pega os nomes dos atletas filiados
+    const filiadosAtletas = new Set(filiadosData.slice(1).map(row => row[0].toLowerCase())); // pega os nomes dos atletas filiados
 
     const etapas = [etapa1Input, etapa2Input, etapa3Input, etapa4Input].filter(item => item); // remove itens vazios (tipo 3 e 4 etapa, se ainda não aconteceram)
     let rankings = {}; // rankings finais
@@ -68,7 +68,7 @@ async function calculateRanking() {
             const colocacao = parseInt(row[2]);
 
             // se o atleta não for filiado, retorna
-            if (!filiadosAtletas.has(nomeAtleta)) return;
+            if (!filiadosAtletas.has(nomeAtleta?.toLowerCase())) return;
 
             const points = tabelaDePontos[colocacao - 1] || 0; // define quantos pontos o atleta fez nessa etapa
 
