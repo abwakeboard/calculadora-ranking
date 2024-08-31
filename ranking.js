@@ -13,12 +13,12 @@ function parseCSVasync(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
 
-        reader.onload = function(event) {
+        reader.onload = function (event) {
             const data = reader.result.split('\n').map(row => row.split(/[,;]/).map(cell => cell.trim()));
             resolve(data);
         };
 
-        reader.onerror = function(event) {
+        reader.onerror = function (event) {
             reject(new Error("Error reading file"));
         };
 
@@ -36,21 +36,27 @@ async function calculateRanking() {
     const stage3Input = document.getElementById('stage3').files[0];
     const stage4Input = document.getElementById('stage4').files[0];
 
-    // if (!affiliatedInput || !stage1Input || !stage2Input || !stage3Input || !stage4Input) {
-    //     alert('Please upload all files.');
-    //     return;
-    // }
+    if (!affiliatedInput || !stage1Input) {
+        alert('Por favor insira pelo menos a lista de filiados e a 1ª etapa');
+        return;
+    }
 
     const affiliatedData = await parseCSVasync(affiliatedInput);
     const affiliatedAthletes = new Set(affiliatedData.slice(1).map(row => row[0])); // Extracting names
 
-    const stages = [stage1Input, stage2Input, stage3Input, stage4Input];
+    const stages = [stage1Input, stage2Input, stage3Input, stage4Input].filter(item => item); // remove itens vazios (tipo 3 e 4 etapa, se ainda não aconteceram)
     let rankings = {};
 
     console.log(`Filiados:`, affiliatedAthletes);
     console.log(`Etapas ${stages.length}:`, stages);
 
     stages.forEach(async (stageFile, index) => {
+
+        // se estamos na ultima etapa, mas nenhum arquivo foi providenciado para essa etapa, inicia a renderização da tabela
+        if (!stageFile && index == stages.length - 1) {
+            displayRankings(rankings);
+            return;
+        };
 
         console.log(`Iniciando processamento da etapa ${index}: `, stageFile?.name);
 
@@ -68,7 +74,7 @@ async function calculateRanking() {
 
             if (!rankings[division]) rankings[division] = {};
 
-            if (!rankings[division][athlete]) rankings[division][athlete] = { totalPoints: 0, stages: [0,0,0,0] };
+            if (!rankings[division][athlete]) rankings[division][athlete] = { totalPoints: 0, stages: [0, 0, 0, 0] };
 
             rankings[division][athlete].stages[index] = points;
             rankings[division][athlete].totalPoints += points;
@@ -80,12 +86,11 @@ async function calculateRanking() {
             rankings[division][athlete].lastDivision = division;
         });
 
-        // After processing all stages, calculate final rankings
+        // se estamos na ultima etapa, vamos começar a calcular o ranking
         if (index != stages.length - 1) return;
         displayRankings(rankings);
 
     });
-
 }
 
 function displayRankings(rankings) {
