@@ -9,7 +9,25 @@ function parseCSV(file, callback) {
     reader.readAsText(file);
 }
 
-function calculateRanking() {
+function parseCSVasync(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = function(event) {
+            const data = reader.result.split('\n').map(row => row.split(/[,;]/).map(cell => cell.trim()));
+            resolve(data);
+        };
+
+        reader.onerror = function(event) {
+            reject(new Error("Error reading file"));
+        };
+
+        reader.readAsText(file);
+    });
+}
+
+
+async function calculateRanking() {
     console.log(`Calculando ranking!`);
 
     const affiliatedInput = document.getElementById('affiliated').files[0];
@@ -23,54 +41,51 @@ function calculateRanking() {
     //     return;
     // }
 
-    parseCSV(affiliatedInput, (affiliatedData) => {
-        const affiliatedAthletes = new Set(affiliatedData.slice(1).map(row => row[0])); // Extracting names
+    const affiliatedData = await parseCSVasync(affiliatedInput);
+    const affiliatedAthletes = new Set(affiliatedData.slice(1).map(row => row[0])); // Extracting names
 
+    const stages = [stage1Input, stage2Input, stage3Input, stage4Input];
+    let rankings = {};
 
-        const stages = [stage1Input, stage2Input, stage3Input, stage4Input];
-        let rankings = {};
+    console.log(`Filiados:`, affiliatedAthletes);
+    console.log(`Etapas ${stages.length}:`, stages);
 
-        console.log(`Filiados:`, affiliatedAthletes);
-        console.log(`Etapas:`, stages);
+    stages.forEach(async (stageFile, index) => {
 
-        stages.forEach((stageFile, index) => {
+        console.log(`Iniciando processamento da etapa ${index}: `, stageFile?.name);
 
-            console.log(`Iniciando processamento da etapa`, stageFile?.name);
+        const stageData = await parseCSVasync(stageFile);
 
-            parseCSV(stageFile, (stageData) => {
+        stageData?.slice(1).forEach(row => {
+            const division = row[0];
+            const athlete = row[1];
+            const place = parseInt(row[2]);
 
-                stageData?.slice(1).forEach(row => {
-                    const division = row[0];
-                    const athlete = row[1];
-                    const place = parseInt(row[2]);
+            // se o atleta não for filiado, retorna
+            if (!affiliatedAthletes.has(athlete)) return;
 
-                    // se o atleta não for filiado, retorna
-                    if (!affiliatedAthletes.has(athlete)) return;
+            const points = pointsTable[place - 1] || 0;
 
-                    const points = pointsTable[place - 1] || 0;
+            if (!rankings[division]) rankings[division] = {};
 
-                    if (!rankings[division]) rankings[division] = {};
+            if (!rankings[division][athlete]) rankings[division][athlete] = { totalPoints: 0, stages: [0,0,0,0] };
 
-                    if (!rankings[division][athlete]) rankings[division][athlete] = { totalPoints: 0, stages: [0,0,0,0] };
+            rankings[division][athlete].stages[index] = points;
+            rankings[division][athlete].totalPoints += points;
 
-                    rankings[division][athlete].stages[index] = points;
-                    rankings[division][athlete].totalPoints += points;
-
-                    // Handle division changes and score reduction by 70%
-                    if (index > 0 && rankings[division][athlete].lastDivision !== division) {
-                        rankings[division][athlete].totalPoints = Math.floor(rankings[division][athlete].totalPoints * 0.7);
-                    }
-                    rankings[division][athlete].lastDivision = division;
-                });
-
-
-                // After processing all stages, calculate final rankings
-                if (index != 3) return;
-                displayRankings(rankings);
-            });
+            // Handle division changes and score reduction by 70%
+            if (index > 0 && rankings[division][athlete].lastDivision !== division) {
+                rankings[division][athlete].totalPoints = Math.floor(rankings[division][athlete].totalPoints * 0.7);
+            }
+            rankings[division][athlete].lastDivision = division;
         });
 
+        // After processing all stages, calculate final rankings
+        if (index != stages.length - 1) return;
+        displayRankings(rankings);
+
     });
+
 }
 
 function displayRankings(rankings) {
