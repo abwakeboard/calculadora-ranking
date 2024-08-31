@@ -1,46 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sports League Ranking</title>
     <style>
-        .strikethrough {
-            text-decoration: line-through;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            border: 1px solid black;
-            padding: 8px;
-            text-align: center;
-        }
+      .strikethrough {
+        text-decoration: line-through;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        border: 1px solid black;
+        padding: 8px;
+        text-align: center;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Sports League Ranking System</h1>
-    
-    <label for="affiliated">Upload Affiliated Athletes:</label>
-    <input type="file" id="filiados"><br><br>
-    
-    <label for="etapa1">Upload etapa 1 Results:</label>
-    <input type="file" id="etapa1"><br><br>
-    
-    <label for="etapa2">Upload etapa 2 Results:</label>
-    <input type="file" id="etapa2"><br><br>
-    
-    <label for="etapa3">Upload etapa 3 Results:</label>
-    <input type="file" id="etapa3"><br><br>
-    
-    <label for="etapa4">Upload etapa 4 Results:</label>
-    <input type="file" id="etapa4"><br><br>
-    
-    <button onclick="calculateRanking()">Calculate Ranking</button>
+
+    <label for="affiliated">Lista de atletas filiados (TicketSports):</label>
+    <input type="file" id="filiados" /><br>
+    <input type="text" id="nomeCircuito" value="Circuito Brasileiro de Wakeboard"/><br /><br />
+
+    <label for="etapa1">Resultados 1ª Etapa (LiveHeats):</label>
+    <input type="file" id="etapa1" /><br />
+    <input type="text" id="etapa1nome" /><br /><br />
+
+    <label for="etapa2">Resultados 2ª Etapa (LiveHeats):</label>
+    <input type="file" id="etapa2" /><br />
+    <input type="text" id="etapa2nome" /><br /><br />
+
+    <label for="etapa3">Resultados 3ª Etapa (LiveHeats):</label>
+    <input type="file" id="etapa3" /><br />
+    <input type="text" id="etapa3nome" /><br /><br />
+
+    <label for="etapa4">Resultados 4ª Etapa (LiveHeats):</label>
+    <input type="file" id="etapa4" /><br />
+    <input type="text" id="etapa4nome" /><br /><br />
+
+    <button onclick="calculateRanking()">Calcular ranking!</button>
 
     <div id="output"></div>
 
     <script src="ranking.js"></script>
-</body>
+  </body>
 </html>

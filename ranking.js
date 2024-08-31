@@ -117,17 +117,23 @@ function displayRankings(rankings) {
     const output = document.getElementById('output');
     output.innerHTML = '';
 
+    // adiciona título
+    const titulo = document.createElement('h1');
+    titulo.innerHTML = nomeCircuito.value;
+    output.appendChild(titulo);
+
+    // processa cada uma das divisões
     for (const division in rankings) {
         const table = document.createElement('table');
         const headerRow = document.createElement('tr');
         headerRow.innerHTML = `
-            <th>Division</th>
-            <th>Athlete</th>
-            <th>Points (etapa 1)</th>
-            <th>Points (etapa 2)</th>
-            <th>Points (etapa 3)</th>
-            <th>Points (etapa 4)</th>
-            <th>Total Points</th>
+            <th>Categoria</th>
+            <th>Nome</th>
+            <th>1ª Etapa:<br><span class='nomeEtapa'>${etapa1nome.value}</span></th>
+            <th>2ª Etapa:<br><span class='nomeEtapa'>${etapa2nome.value}</span></th>
+            <th>3ª Etapa:<br><span class='nomeEtapa'>${etapa3nome.value}</span></th>
+            <th>4ª Etapa:<br><span class='nomeEtapa'>${etapa4nome.value}</span></th>
+            <th>Total</th>
         `;
         table.appendChild(headerRow);
 
