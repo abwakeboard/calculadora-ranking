@@ -1,6 +1,7 @@
-const pointsTable = [100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5];
+const tabelaDePontos = [100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5];
 const ordemCategorias = ["Adaptado", "Mirim Masculino", "Mirim Feminino", "Estreantes", "Iniciante Masculino", "Iniciante Feminino", "Intermediario", "Avancado", "Feminino", "Open", "Profissional", "PRO Event"];
 
+// função que retorna um array com os dados de um CSV
 function parseCSVasync(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -18,96 +19,99 @@ function parseCSVasync(file) {
     });
 }
 
+// funcção principal para calcular o ranking
 async function calculateRanking() {
     console.log(`Calculando ranking!`);
 
-    const affiliatedInput = document.getElementById('affiliated').files[0];
-    const stage1Input = document.getElementById('stage1').files[0];
-    const stage2Input = document.getElementById('stage2').files[0];
-    const stage3Input = document.getElementById('stage3').files[0];
-    const stage4Input = document.getElementById('stage4').files[0];
+    const filiadosInput = document.getElementById('filiados').files[0];
+    const etapa1Input = document.getElementById('etapa1').files[0];
+    const etapa2Input = document.getElementById('etapa2').files[0];
+    const etapa3Input = document.getElementById('etapa3').files[0];
+    const etapa4Input = document.getElementById('etapa4').files[0];
 
-    if (!affiliatedInput || !stage1Input) {
+    if (!filiadosInput || !etapa1Input) {
         alert('Por favor insira pelo menos a lista de filiados e a 1ª etapa');
         return;
     }
 
-    const affiliatedData = await parseCSVasync(affiliatedInput);
-    const affiliatedAthletes = new Set(affiliatedData.slice(1).map(row => row[0])); // Extracting names
+    const filiadosData = await parseCSVasync(filiadosInput);
+    const filiadosAtletas = new Set(filiadosData.slice(1).map(row => row[0])); // pega os nomes dos atletas filiados
 
-    const stages = [stage1Input, stage2Input, stage3Input, stage4Input].filter(item => item); // remove itens vazios (tipo 3 e 4 etapa, se ainda não aconteceram)
+    const etapas = [etapa1Input, etapa2Input, etapa3Input, etapa4Input].filter(item => item); // remove itens vazios (tipo 3 e 4 etapa, se ainda não aconteceram)
     let rankings = {}; // rankings finais
     let ultimasCategorias = {}; // ultima categoria que um atleta competiu. Vai ser utilizado pra ajudar no calculo de transferencia de nota
 
-    console.log(`Filiados:`, affiliatedAthletes);
-    console.log(`Etapas ${stages.length}:`, stages);
+    console.log(`Filiados:`, filiadosAtletas);
+    console.log(`Etapas ${etapas.length}:`, etapas);
 
-    stages.forEach(async (stageFile, index) => {
+    etapas.forEach(async (etapaFile, index) => {
 
         // se estamos na ultima etapa, mas nenhum arquivo foi providenciado para essa etapa, inicia a renderização da tabela
-        if (!stageFile && index == stages.length - 1) {
+        if (!etapaFile && index == etapas.length - 1) {
             displayRankings(rankings);
             return;
         };
 
-        console.log(`Iniciando processamento da etapa ${index}: `, stageFile?.name);
+        console.log(`Iniciando processamento da etapa ${index}: `, etapaFile?.name);
 
-        const stageData = await parseCSVasync(stageFile);
+        const etapaData = await parseCSVasync(etapaFile);
 
         // reordena na ordem certa das categorias
-        const stageDataSorted = stageData.slice(1).sort((a, b) => 
+        const etapaDataSorted = etapaData.slice(1).sort((a, b) => 
             ordemCategorias.indexOf(a[0]) - ordemCategorias.indexOf(b[0])
         );
 
-        stageDataSorted.forEach(row => {
-            const division = row[0];
-            const athlete = row[1];
-            const place = parseInt(row[2]);
+        // inicia calculo específico para essa etapa
+        etapaDataSorted.forEach(row => {
+            const categoria = row[0];
+            const nomeAtleta = row[1];
+            const colocacao = parseInt(row[2]);
 
             // se o atleta não for filiado, retorna
-            if (!affiliatedAthletes.has(athlete)) return;
+            if (!filiadosAtletas.has(nomeAtleta)) return;
 
-            const points = pointsTable[place - 1] || 0;
+            const points = tabelaDePontos[colocacao - 1] || 0; // define quantos pontos o atleta fez nessa etapa
 
             // cria categoria se ela ainda não existe
-            if (!rankings[division]) rankings[division] = {};
+            if (!rankings[categoria]) rankings[categoria] = {};
 
             // vamos criar o perfil do atleta na categoria atual
             // primeiro, vamos ver se ele ja esteve em alguma outra categoria
             // Se ele esteve, vamos copiar o perfil dele para a nova categoria, e tirar 30% das notas das etapas
-            if(ultimasCategorias[athlete] && ultimasCategorias[athlete] != division) {
-                const ultimaCateogria = ultimasCategorias[athlete];
-                console.log(`${athlete} mudou de categoria na etapa ${index + 1}! De ${ultimaCateogria} para ${division}`);
+            if(ultimasCategorias[nomeAtleta] && ultimasCategorias[nomeAtleta] != categoria) {
+                const ultimaCateogria = ultimasCategorias[nomeAtleta];
+                console.log(`${nomeAtleta} mudou de categoria na etapa ${index + 1}! De ${ultimaCateogria} para ${categoria}`);
                 // copia o perfil para a nova categoria
-                rankings[division][athlete] = JSON.parse(JSON.stringify(rankings[ultimaCateogria][athlete])); // json stringify e json parse pra criar uma cópia do atleta, e não uma referência
+                rankings[categoria][nomeAtleta] = JSON.parse(JSON.stringify(rankings[ultimaCateogria][nomeAtleta])); // json stringify e json parse pra criar uma cópia do atleta, e não uma referência
                 // desconta 30% das notas
-                rankings[division][athlete][`stages`] = rankings[division][athlete][`stages`].map(num => num * 0.7);
+                rankings[categoria][nomeAtleta][`etapas`] = rankings[categoria][nomeAtleta][`etapas`].map(num => num * 0.7);
                 // vamos criar uma array que contem os index das notas que transferimos. Assim podemos marcar elas com um asterisco na tabela final, para feedback
-                rankings[division][athlete][`transferencias`] = rankings[division][athlete][`stages`].map((num, index) => num !== 0 ? index : -1).filter(index => index !== -1);
+                rankings[categoria][nomeAtleta][`transferencias`] = rankings[categoria][nomeAtleta][`etapas`].map((num, index) => num !== 0 ? index : -1).filter(index => index !== -1);
 
-            } else if (!rankings[division][athlete]) { // se é a primeira etapa do atleta, criamos um perfil novo vazio
-                rankings[division][athlete] = { totalPoints: 0, stages: [0, 0, 0, 0] };
+            } else if (!rankings[categoria][nomeAtleta]) { // se é a primeira etapa do atleta, criamos um perfil novo vazio
+                rankings[categoria][nomeAtleta] = { pontosTotal: 0, etapas: [0, 0, 0, 0] };
             }
 
-            ultimasCategorias[athlete] = division;
+            ultimasCategorias[nomeAtleta] = categoria;
 
             // adiciona os novos pontos
-            rankings[division][athlete].stages[index] = points;
+            rankings[categoria][nomeAtleta].etapas[index] = points;
 
-            const descarte = calcDescarte(rankings[division][athlete].stages); // calcula a nota final com descarte, e o indice da nota descartada
+            const descarte = calcDescarte(rankings[categoria][nomeAtleta].etapas); // calcula a nota final com descarte, e o indice da nota descartada
 
-            rankings[division][athlete].totalPoints = descarte.soma; // soma todos os pontos
-            rankings[division][athlete].indexDescarte = descarte.indexDescarte; // index da ntoa descartada
+            rankings[categoria][nomeAtleta].pontosTotal = descarte.soma; // soma todos os pontos
+            rankings[categoria][nomeAtleta].indexDescarte = descarte.indexDescarte; // index da ntoa descartada
 
         });
 
         // se estamos na ultima etapa, vamos começar a calcular o ranking
-        if (index != stages.length - 1) return;
+        if (index != etapas.length - 1) return;
         displayRankings(rankings);
 
     });
 }
 
+// função que renderiza o HTML da tabela
 function displayRankings(rankings) {
     console.log(`Montando tabela com dados:`, rankings);
     const output = document.getElementById('output');
@@ -119,35 +123,35 @@ function displayRankings(rankings) {
         headerRow.innerHTML = `
             <th>Division</th>
             <th>Athlete</th>
-            <th>Points (Stage 1)</th>
-            <th>Points (Stage 2)</th>
-            <th>Points (Stage 3)</th>
-            <th>Points (Stage 4)</th>
+            <th>Points (etapa 1)</th>
+            <th>Points (etapa 2)</th>
+            <th>Points (etapa 3)</th>
+            <th>Points (etapa 4)</th>
             <th>Total Points</th>
         `;
         table.appendChild(headerRow);
 
-        const sortedAthletes = Object.entries(rankings[division]).sort((a, b) => b[1].totalPoints - a[1].totalPoints);
+        const atletasSorted = Object.entries(rankings[division]).sort((a, b) => b[1].pontosTotal - a[1].pontosTotal);
 
-        console.log(`sortedAthletes`, sortedAthletes);
+        console.log(`sortedAthletes`, atletasSorted);
 
-        sortedAthletes.forEach(([athlete, data]) => {
+        atletasSorted.forEach(([nomeAtleta, data]) => {
             const row = document.createElement('tr');
-            const stages = data.stages;
-            let totalPoints = roundIfDecimal(data.totalPoints);
+            const etapas = data.etapas;
+            let pontosTotal = roundIfDecimal(data.pontosTotal);
 
             // adiciona risco a menor nota
-            const stageCells = stages.map((stage, index) => {
-                const notaRound = roundIfDecimal(stage);
+            const etapaCells = etapas.map((etapa, index) => {
+                const notaArredondada = roundIfDecimal(etapa);
                 const asterisco = data.transferencias && data.transferencias.includes(index) ? `*` : ``; // adiciona asterisco se a nota foi uma trasnferência de outra categoria
-                return index == data.indexDescarte ? `<td class="strikethrough">${notaRound}${asterisco}</td>` : `<td>${notaRound}${asterisco}</td>`;
+                return index == data.indexDescarte ? `<td class="strikethrough">${notaArredondada}${asterisco}</td>` : `<td>${notaArredondada}${asterisco}</td>`;
             }).join('');
 
             row.innerHTML = `
                 <td>${division}</td>
-                <td>${athlete}</td>
-                ${stageCells}
-                <td>${totalPoints}</td>
+                <td>${nomeAtleta}</td>
+                ${etapaCells}
+                <td>${pontosTotal}</td>
             `;
             table.appendChild(row);
         });
