@@ -67,6 +67,8 @@ async function calculateRanking() {
             const nomeAtleta = row[1];
             const colocacao = parseInt(row[2]);
 
+            console.log(`${categoria.toLowerCase()}, ${nomeAtleta}, ${colocacao}`);
+
             // se o atleta não for filiado, retorna
             if (!filiadosAtletas.has(nomeAtleta?.toLowerCase())) return;
 
@@ -78,7 +80,8 @@ async function calculateRanking() {
             // vamos criar o perfil do atleta na categoria atual
             // primeiro, vamos ver se ele ja esteve em alguma outra categoria
             // Se ele esteve, vamos copiar o perfil dele para a nova categoria, e tirar 30% das notas das etapas
-            if(ultimasCategorias[nomeAtleta] && ultimasCategorias[nomeAtleta] != categoria) {
+            // A categoria Wakeskate não é considerada nesse caso
+            if(ultimasCategorias[nomeAtleta] && ultimasCategorias[nomeAtleta] != categoria && categoria.toLowerCase() != "wakeskate") {
                 const ultimaCateogria = ultimasCategorias[nomeAtleta];
                 console.log(`${nomeAtleta} mudou de categoria na etapa ${index + 1}! De ${ultimaCateogria} para ${categoria}`);
                 // copia o perfil para a nova categoria
@@ -92,7 +95,11 @@ async function calculateRanking() {
                 rankings[categoria][nomeAtleta] = { pontosTotal: 0, etapas: [0, 0, 0, 0] };
             }
 
-            ultimasCategorias[nomeAtleta] = categoria;
+            // a array ultimasCategorias é utilizada pra conferir se o atleta mudou de categoria pra realizar o desconto de 30% da nota
+            // O wakeskate deve ser desconsiderado nesse caso
+            if (categoria.toLowerCase() != "wakeskate") {
+                ultimasCategorias[nomeAtleta] = categoria;                
+            }
 
             // adiciona os novos pontos
             rankings[categoria][nomeAtleta].etapas[index] = points;
@@ -127,10 +134,10 @@ function displayRankings(rankings) {
             <th>Categoria</th>
             <th>Posição</th>
             <th>Nome</th>
-            <th>1ª Etapa:<br><span class='nomeEtapa'>${etapa1nome.value}</span></th>
-            <th>2ª Etapa:<br><span class='nomeEtapa'>${etapa2nome.value}</span></th>
-            <th>3ª Etapa:<br><span class='nomeEtapa'>${etapa3nome.value}</span></th>
-            <th>4ª Etapa:<br><span class='nomeEtapa'>${etapa4nome.value}</span></th>
+            <th class='etapa1'>1ª Etapa:<br><span class='nomeEtapa'>${etapa1nome.value}</span></th>
+            <th class='etapa2'>2ª Etapa:<br><span class='nomeEtapa'>${etapa2nome.value}</span></th>
+            <th class='etapa3'>3ª Etapa:<br><span class='nomeEtapa'>${etapa3nome.value}</span></th>
+            <th class='etapa4'>4ª Etapa:<br><span class='nomeEtapa'>${etapa4nome.value}</span></th>
             <th>Total</th>
         `;
         table.appendChild(headerRow);
@@ -170,7 +177,7 @@ function displayRankings(rankings) {
             const etapaCells = etapas.map((etapa, index) => {
                 const notaArredondada = roundIfDecimal(etapa);
                 const asterisco = data.transferencias && data.transferencias.includes(index) ? `*` : ``; // adiciona asterisco se a nota foi uma trasnferência de outra categoria
-                return index == data.indexDescarte ? `<td class="descarte">${notaArredondada}${asterisco}</td>` : `<td>${notaArredondada}${asterisco}</td>`;
+                return index == data.indexDescarte ? `<td class="descarte etapa${index+1}">${notaArredondada}${asterisco}</td>` : `<td class="etapa${index+1}">${notaArredondada}${asterisco}</td>`;
             }).join('');
 
             row.innerHTML = `
