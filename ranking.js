@@ -63,27 +63,34 @@ async function calculateRanking() {
     const filiadosData = await parseCSVasync(filiadosInput);
     const filiadosAtletas = new Set(filiadosData.slice(1).map(row => row[0].toLowerCase())); // pega os nomes dos atletas filiados
 
-    const etapas = [etapa1Input, etapa2Input, etapa3Input, etapa4Input].filter(item => item); // remove itens vazios (tipo 3 e 4 etapa, se ainda não aconteceram)
+    const todasEtapas = [etapa1Input, etapa2Input, etapa3Input, etapa4Input]
+    const etapas = todasEtapas.filter(item => item); // remove itens vazios (tipo 3 e 4 etapa, se ainda não aconteceram)
     let rankings = {}; // rankings finais
     let ultimasCategorias = {}; // ultima categoria que um atleta competiu. Vai ser utilizado pra ajudar no calculo de transferencia de nota
 
     console.log(`Filiados:`, filiadosAtletas);
     console.log(`Etapas ${etapas.length}:`, etapas);
 
-    etapas.forEach(async (etapaFile, index) => {
+    // esconde da tabela as etapas sem arquivos CSV
+    todasEtapas.forEach((etapaFile, index) => { 
+        if (!etapaFile) {
+            console.warn(`Nenhum arquivo enviado para a etapa ${index+1}. Escondendo da tabela`);
+            document.getElementById('customCss').textContent += `
+                .etapa${index+1} {
+                display: none;
+                }
+            `;
+        }
+    });
 
-        // se estamos na ultima etapa, mas nenhum arquivo foi providenciado para essa etapa, inicia a renderização da tabela
-        if (!etapaFile && index == etapas.length - 1) {
-            displayRankings(rankings);
-            return;
-        };
+    etapas.forEach(async (etapaFile, index) => {
 
         console.log(`Iniciando processamento da etapa ${index}: `, etapaFile?.name);
 
         const etapaData = await parseCSVasync(etapaFile);
 
         // reordena na ordem certa das categorias
-        const etapaDataSorted = etapaData.slice(1).sort((a, b) => 
+        const etapaDataSorted = etapaData.slice(1).sort((a, b) =>
             ordemCategorias.indexOf(a[0]) - ordemCategorias.indexOf(b[0])
         );
 
@@ -107,7 +114,7 @@ async function calculateRanking() {
             // primeiro, vamos ver se ele ja esteve em alguma outra categoria
             // Se ele esteve, vamos copiar o perfil dele para a nova categoria, e tirar 30% das notas das etapas
             // A categoria Wakeskate não é considerada nesse caso
-            if(ultimasCategorias[nomeAtleta] && ultimasCategorias[nomeAtleta] != categoria && categoria.toLowerCase() != "wakeskate") {
+            if (ultimasCategorias[nomeAtleta] && ultimasCategorias[nomeAtleta] != categoria && categoria.toLowerCase() != "wakeskate") {
                 const ultimaCateogria = ultimasCategorias[nomeAtleta];
                 console.log(`${nomeAtleta} mudou de categoria na etapa ${index + 1}! De ${ultimaCateogria} para ${categoria}`);
                 // copia o perfil para a nova categoria
@@ -124,7 +131,7 @@ async function calculateRanking() {
             // a array ultimasCategorias é utilizada pra conferir se o atleta mudou de categoria pra realizar o desconto de 30% da nota
             // O wakeskate deve ser desconsiderado nesse caso
             if (categoria.toLowerCase() != "wakeskate") {
-                ultimasCategorias[nomeAtleta] = categoria;                
+                ultimasCategorias[nomeAtleta] = categoria;
             }
 
             // adiciona os novos pontos
@@ -173,20 +180,20 @@ function displayRankings(rankings) {
             // Primeiro, compara o total de pontos. Quem tem mais pontos fica na frente
             const pontosDiff = b[1].pontosTotal - a[1].pontosTotal;
             if (pontosDiff !== 0) return pontosDiff;
-        
+
             // se empatar pelo total de pontos, vamos comparar os valores individuais de cada etapa.
             // o atleta que tiver uma pontuação maior em uma única etapa fica na frente
 
             // Vamos ordenar o valor das etapas em ordem descrescente:
             const etapasA = [...a[1].etapas].sort((x, y) => y - x);
             const etapasB = [...b[1].etapas].sort((x, y) => y - x);
-        
+
             // agora vamos comparar os valores individuais de cada uma das etapas.
             for (let i = 0; i < etapasA.length; i++) {
                 const diff = etapasB[i] - etapasA[i];
                 if (diff !== 0) return diff; // Se um valor for maior do que o outro, retorna isso como a ordem final
             }
-        
+
             // Se todos os valores forem iguais, mantém a ordem. Em teoria isso é impossível, mas vai que né.
             return 0;
         });
@@ -203,7 +210,7 @@ function displayRankings(rankings) {
             const etapaCells = etapas.map((etapa, index) => {
                 const notaArredondada = roundIfDecimal(etapa);
                 const asterisco = data.transferencias && data.transferencias.includes(index) ? `*` : ``; // adiciona asterisco se a nota foi uma trasnferência de outra categoria
-                return index == data.indexDescarte ? `<td class="descarte etapa${index+1}">${notaArredondada}${asterisco}</td>` : `<td class="etapa${index+1}">${notaArredondada}${asterisco}</td>`;
+                return index == data.indexDescarte ? `<td class="descarte etapa${index + 1}">${notaArredondada}${asterisco}</td>` : `<td class="etapa${index + 1}">${notaArredondada}${asterisco}</td>`;
             }).join('');
 
             row.innerHTML = `
