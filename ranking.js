@@ -27,6 +27,8 @@ const ordemCategorias = [
     "PRO Event"
 ];
 
+let numeroEtapas = 0;
+
 // função que retorna um array com os dados de um CSV
 function parseCSVasync(file) {
     return new Promise((resolve, reject) => {
@@ -80,6 +82,8 @@ async function calculateRanking() {
                 display: none;
                 }
             `;
+        } else {
+            numeroEtapas++;
         }
     });
 
@@ -177,12 +181,17 @@ function displayRankings(rankings) {
 
         // vamos ordenar o ranking
         const atletasSorted = Object.entries(rankings[categoria]).sort((a, b) => {
+
+            console.log(`[Ordem Ranking] COMPARANDO ${a[0]} com ${b[0]}:`, a, b);
+
             // Primeiro, compara o total de pontos. Quem tem mais pontos fica na frente
             const pontosDiff = b[1].pontosTotal - a[1].pontosTotal;
             if (pontosDiff !== 0) return pontosDiff;
 
             // se empatar pelo total de pontos, vamos comparar os valores individuais de cada etapa.
             // o atleta que tiver uma pontuação maior em uma única etapa fica na frente
+
+            console.log(`[Ordem Ranking] Total de pontos igual (${a[1].pontosTotal} vs ${b[1].pontosTotal}). Vamos comparar os valores individuais de cada etapa`);
 
             // Vamos ordenar o valor das etapas em ordem descrescente:
             const etapasA = [...a[1].etapas].sort((x, y) => y - x);
@@ -193,6 +202,17 @@ function displayRankings(rankings) {
                 const diff = etapasB[i] - etapasA[i];
                 if (diff !== 0) return diff; // Se um valor for maior do que o outro, retorna isso como a ordem final
             }
+
+            console.log(`[Ordem Ranking] Maior nota entre todas as etapas são iguais (${etapasA} vs ${etapasB}). Vamos utilizar a pontuação da última etapa`);
+
+            // Se ainda estiver empatado, compara a pontuação da última etapa
+            const ultimaEtapaA = a[1].etapas[numeroEtapas-1];
+            const ultimaEtapaB = b[1].etapas[numeroEtapas-1];
+
+            console.log(`[Ordem Ranking] Pontuação da última etapa ${ultimaEtapaA} vs ${ultimaEtapaB}`);
+
+            const diffUltimaEtapa = ultimaEtapaB - ultimaEtapaA;
+            if (diffUltimaEtapa !== 0) return diffUltimaEtapa;
 
             // Se todos os valores forem iguais, mantém a ordem. Em teoria isso é impossível, mas vai que né.
             return 0;
