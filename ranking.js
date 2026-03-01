@@ -1,5 +1,31 @@
 const tabelaDePontos = [100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5];
-const ordemCategorias = ["Adaptado", "Mirim Masculino", "Mirim Feminino", "Estreantes", "Iniciante Masculino", "Iniciante Feminino", "Intermediario", "Avancado", "Feminino", "Open", "Profissional", "PRO Event"];
+const ordemCategorias = [
+    "Adaptado",
+    "Mirim",
+    "Mirim Masculino",
+    "Mirim Feminino",
+    "Mirim Masculino ate 12 anos",
+    "Mirim Masculino  ate 12 anos",
+    "Mirim Feminino ate 12 anos",
+    "Mirim Feminino  ate 12 anos",
+    "Estreantes",
+    "Iniciante",
+    "Iniciante Masculino",
+    "Iniciante Feminino",
+    "Intermediario Masculino",
+    "Intermediario Feminino",
+    "Avancado",
+    "Avancado Masculino",
+    "Avancado Feminino",
+    "Feminino",
+    "Open",
+    "Open Masculino",
+    "Open Feminino",
+    "Profissional",
+    "Profissional Masculino",
+    "Profissional Feminino",
+    "PRO Event"
+];
 
 // função que retorna um array com os dados de um CSV
 function parseCSVasync(file) {
