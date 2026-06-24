@@ -9,6 +9,8 @@ const ordemCategorias = [
     "Mirim Feminino ate 12 anos",
     "Mirim Feminino  ate 12 anos",
     "Estreantes",
+    "Estreantes Feminino",
+    "Estreantes Masculino",
     "Iniciante",
     "Iniciante Masculino",
     "Iniciante Feminino",
