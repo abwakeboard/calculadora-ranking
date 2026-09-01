@@ -49,6 +49,62 @@ function parseCSVasync(file) {
     });
 }
 
+// Retorna os nomes dos atletas filiados a partir da lista do TicketSports (CSV)
+// ou do SporTickets (XLSX). No XLSX, somente membros com status ACTIVE são válidos.
+async function parseFiliadosAsync(file) {
+    const extensao = file.name.split('.').pop()?.toLowerCase();
+
+    if (extensao !== 'xlsx') {
+        const data = await parseCSVasync(file);
+        return data.slice(1).map(row => row[0]);
+    }
+
+    if (typeof XLSX === 'undefined') {
+        throw new Error('Não foi possível carregar o leitor de arquivos XLSX.');
+    }
+
+    const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+    const nomeAbaMembros = workbook.SheetNames.find(nome => nome.trim().toLowerCase() === 'membros');
+
+    if (!nomeAbaMembros) {
+        throw new Error('A planilha do SporTickets não contém a aba "Membros".');
+    }
+
+    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[nomeAbaMembros], {
+        header: 1,
+        defval: ''
+    });
+    const headers = rows[0]?.map(header => String(header).trim().toLowerCase()) || [];
+    const nomeIndex = headers.indexOf('nome');
+    const statusIndex = headers.indexOf('status');
+
+    if (nomeIndex === -1 || statusIndex === -1) {
+        throw new Error('A aba "Membros" deve conter as colunas "Nome" e "Status".');
+    }
+
+    return rows
+        .slice(1)
+        .filter(row => String(row[statusIndex]).trim().toUpperCase() === 'ACTIVE')
+        .map(row => row[nomeIndex]);
+}
+
+function normalizaNome(nome) {
+    return String(nome || '').trim().toLowerCase();
+}
+
+function normalizaHeader(header) {
+    return String(header || '')
+        .replace(/^\uFEFF/, '')
+        .trim()
+        .replace(/^"|"$/g, '')
+        .trim()
+        .toLowerCase();
+}
+
+function categoriaSemRanking(categoria) {
+    return String(categoria || '').trim().toLowerCase().includes('estreantes');
+}
+
 // funcção principal para calcular o ranking
 async function calculateRanking() {
     console.log(`Calculando ranking!`);
@@ -64,8 +120,23 @@ async function calculateRanking() {
         return;
     }
 
-    const filiadosData = await parseCSVasync(filiadosInput);
-    const filiadosAtletas = new Set(filiadosData.slice(1).map(row => row[0].toLowerCase())); // pega os nomes dos atletas filiados
+    numeroEtapas = 0;
+    document.getElementById('customCss').textContent = '';
+
+    let filiadosAtletas;
+
+    try {
+        const nomesFiliados = await parseFiliadosAsync(filiadosInput);
+        filiadosAtletas = new Map();
+        nomesFiliados.forEach(nome => {
+            const nomeNormalizado = normalizaNome(nome);
+            if (nomeNormalizado) filiadosAtletas.set(nomeNormalizado, String(nome).trim());
+        });
+    } catch (error) {
+        console.error('Erro ao processar a lista de filiados:', error);
+        alert(error.message);
+        return;
+    }
 
     const todasEtapas = [etapa1Input, etapa2Input, etapa3Input, etapa4Input]
     const etapas = todasEtapas.filter(item => item); // remove itens vazios (tipo 3 e 4 etapa, se ainda não aconteceram)
@@ -89,27 +160,46 @@ async function calculateRanking() {
         }
     });
 
-    etapas.forEach(async (etapaFile, index) => {
+    for (const [index, etapaFile] of etapas.entries()) {
 
         console.log(`Iniciando processamento da etapa ${index}: `, etapaFile?.name);
 
         const etapaData = await parseCSVasync(etapaFile);
+        const headers = etapaData[0] || [];
+        const divisionIndex = headers.findIndex(header => normalizaHeader(header) === 'division');
+        const athleteIndex = headers.findIndex(header => normalizaHeader(header) === 'athlete');
+        const placeIndex = headers.findIndex(header => normalizaHeader(header) === 'place');
+        const colunasAusentes = [
+            ['Division', divisionIndex],
+            ['Athlete', athleteIndex],
+            ['Place', placeIndex]
+        ].filter(([, columnIndex]) => columnIndex === -1).map(([columnName]) => columnName);
+
+        if (colunasAusentes.length > 0) {
+            alert(`O CSV da ${index + 1}ª etapa não contém as colunas obrigatórias: ${colunasAusentes.join(', ')}.`);
+            return;
+        }
 
         // reordena na ordem certa das categorias
         const etapaDataSorted = etapaData.slice(1).sort((a, b) =>
-            ordemCategorias.indexOf(a[0]) - ordemCategorias.indexOf(b[0])
+            ordemCategorias.indexOf(a[divisionIndex]) - ordemCategorias.indexOf(b[divisionIndex])
         );
 
         // inicia calculo específico para essa etapa
         etapaDataSorted.forEach(row => {
-            const categoria = row[0];
-            const nomeAtleta = row[1];
-            const colocacao = parseInt(row[2]);
+            const categoria = row[divisionIndex];
 
-            console.log(`${categoria.toLowerCase()}, ${nomeAtleta}, ${colocacao}`);
+            // Categorias de Estreantes não participam do ranking nem de transferências.
+            if (categoriaSemRanking(categoria)) return;
+
+            const nomeAtletaCSV = row[athleteIndex];
+            const nomeAtleta = filiadosAtletas.get(normalizaNome(nomeAtletaCSV));
+            const colocacao = parseInt(row[placeIndex]);
 
             // se o atleta não for filiado, retorna
-            if (!filiadosAtletas.has(nomeAtleta?.toLowerCase())) return;
+            if (!nomeAtleta) return;
+
+            console.log(`${categoria.toLowerCase()}, ${nomeAtleta}, ${colocacao}`);
 
             const points = tabelaDePontos[colocacao - 1] || 0; // define quantos pontos o atleta fez nessa etapa
 
@@ -130,8 +220,18 @@ async function calculateRanking() {
                 // vamos criar uma array que contem os index das notas que transferimos. Assim podemos marcar elas com um asterisco na tabela final, para feedback
                 rankings[categoria][nomeAtleta][`transferencias`] = rankings[categoria][nomeAtleta][`etapas`].map((num, index) => num !== 0 ? index : -1).filter(index => index !== -1);
 
+                // remove o atleta da categoria anterior após a transferência
+                delete rankings[ultimaCateogria][nomeAtleta];
+                if (Object.keys(rankings[ultimaCateogria]).length === 0) {
+                    delete rankings[ultimaCateogria];
+                }
+
             } else if (!rankings[categoria][nomeAtleta]) { // se é a primeira etapa do atleta, criamos um perfil novo vazio
-                rankings[categoria][nomeAtleta] = { pontosTotal: 0, etapas: [0, 0, 0, 0] };
+                rankings[categoria][nomeAtleta] = {
+                    pontosTotal: 0,
+                    etapas: [0, 0, 0, 0],
+                    colocacoes: [null, null, null, null]
+                };
             }
 
             // a array ultimasCategorias é utilizada pra conferir se o atleta mudou de categoria pra realizar o desconto de 30% da nota
@@ -142,6 +242,7 @@ async function calculateRanking() {
 
             // adiciona os novos pontos
             rankings[categoria][nomeAtleta].etapas[index] = points;
+            rankings[categoria][nomeAtleta].colocacoes[index] = colocacao;
 
             const descarte = calcDescarte(rankings[categoria][nomeAtleta].etapas); // calcula a nota final com descarte, e o indice da nota descartada
 
@@ -150,11 +251,55 @@ async function calculateRanking() {
 
         });
 
-        // se estamos na ultima etapa, vamos começar a calcular o ranking
-        if (index != etapas.length - 1) return;
-        displayRankings(rankings);
+    }
 
-    });
+    displayRankings(rankings);
+}
+
+function colocacaoValida(colocacao) {
+    return Number.isInteger(colocacao) && colocacao > 0;
+}
+
+function ultimaColocacaoValida(colocacoes) {
+    for (let index = colocacoes.length - 1; index >= 0; index--) {
+        if (colocacaoValida(colocacoes[index])) return colocacoes[index];
+    }
+    return null;
+}
+
+function comparaDesempate(atletaA, atletaB) {
+    const colocacoesA = atletaA.colocacoes || [];
+    const colocacoesB = atletaB.colocacoes || [];
+    const todasColocacoes = [...colocacoesA, ...colocacoesB].filter(colocacaoValida);
+    const maiorColocacao = todasColocacoes.length > 0 ? Math.max(...todasColocacoes) : 0;
+
+    // Compara primeiro o número de vitórias, depois de segundos lugares e assim por diante.
+    for (let colocacao = 1; colocacao <= maiorColocacao; colocacao++) {
+        const quantidadeA = colocacoesA.filter(valor => valor === colocacao).length;
+        const quantidadeB = colocacoesB.filter(valor => valor === colocacao).length;
+
+        if (quantidadeA !== quantidadeB) return quantidadeB - quantidadeA;
+    }
+
+    // Persistindo o empate, compara a colocação da última participação de cada atleta.
+    const ultimaParticipacaoA = ultimaColocacaoValida(colocacoesA);
+    const ultimaParticipacaoB = ultimaColocacaoValida(colocacoesB);
+
+    if (colocacaoValida(ultimaParticipacaoA) && colocacaoValida(ultimaParticipacaoB)) {
+        const diferenca = ultimaParticipacaoA - ultimaParticipacaoB;
+        if (diferenca !== 0) return diferenca;
+    }
+
+    // Como último critério, usa o resultado da última etapa do circuito.
+    const ultimaEtapaIndex = numeroEtapas - 1;
+    const ultimaColocacaoA = colocacoesA[ultimaEtapaIndex];
+    const ultimaColocacaoB = colocacoesB[ultimaEtapaIndex];
+    const participouA = colocacaoValida(ultimaColocacaoA);
+    const participouB = colocacaoValida(ultimaColocacaoB);
+
+    if (participouA && participouB) return ultimaColocacaoA - ultimaColocacaoB;
+    if (participouA !== participouB) return participouA ? -1 : 1;
+    return 0;
 }
 
 // função que renderiza o HTML da tabela
@@ -190,40 +335,20 @@ function displayRankings(rankings) {
             const pontosDiff = b[1].pontosTotal - a[1].pontosTotal;
             if (pontosDiff !== 0) return pontosDiff;
 
-            // se empatar pelo total de pontos, vamos comparar os valores individuais de cada etapa.
-            // o atleta que tiver uma pontuação maior em uma única etapa fica na frente
-
-            console.log(`[Ordem Ranking] Total de pontos igual (${a[1].pontosTotal} vs ${b[1].pontosTotal}). Vamos comparar os valores individuais de cada etapa`);
-
-            // Vamos ordenar o valor das etapas em ordem descrescente:
-            const etapasA = [...a[1].etapas].sort((x, y) => y - x);
-            const etapasB = [...b[1].etapas].sort((x, y) => y - x);
-
-            // agora vamos comparar os valores individuais de cada uma das etapas.
-            for (let i = 0; i < etapasA.length; i++) {
-                const diff = etapasB[i] - etapasA[i];
-                if (diff !== 0) return diff; // Se um valor for maior do que o outro, retorna isso como a ordem final
-            }
-
-            console.log(`[Ordem Ranking] Maior nota entre todas as etapas são iguais (${etapasA} vs ${etapasB}). Vamos utilizar a pontuação da última etapa`);
-
-            // Se ainda estiver empatado, compara a pontuação da última etapa
-            const ultimaEtapaA = a[1].etapas[numeroEtapas-1];
-            const ultimaEtapaB = b[1].etapas[numeroEtapas-1];
-
-            console.log(`[Ordem Ranking] Pontuação da última etapa ${ultimaEtapaA} vs ${ultimaEtapaB}`);
-
-            const diffUltimaEtapa = ultimaEtapaB - ultimaEtapaA;
-            if (diffUltimaEtapa !== 0) return diffUltimaEtapa;
-
-            // Se todos os valores forem iguais, mantém a ordem. Em teoria isso é impossível, mas vai que né.
-            return 0;
+            console.log(`[Ordem Ranking] Total de pontos igual (${a[1].pontosTotal} vs ${b[1].pontosTotal}). Aplicando os critérios de desempate por colocação.`);
+            return comparaDesempate(a[1], b[1]);
         });
 
         console.log(`Atletas da categoria ${categoria} em ordem:`, atletasSorted);
 
-        let posicao = 1;
-        atletasSorted.forEach(([nomeAtleta, data]) => {
+        let posicaoAnterior = 0;
+        let atletaAnterior = null;
+
+        atletasSorted.forEach(([nomeAtleta, data], index) => {
+            const empatadoComAnterior = atletaAnterior
+                && data.pontosTotal === atletaAnterior.pontosTotal
+                && comparaDesempate(atletaAnterior, data) === 0;
+            const posicao = empatadoComAnterior ? posicaoAnterior : index + 1;
             const row = document.createElement('tr');
             const etapas = data.etapas;
             let pontosTotal = roundIfDecimal(data.pontosTotal);
@@ -243,7 +368,8 @@ function displayRankings(rankings) {
                 <td>${pontosTotal}</td>
             `;
             table.appendChild(row);
-            posicao++;
+            posicaoAnterior = posicao;
+            atletaAnterior = data;
         });
 
         output.appendChild(table);

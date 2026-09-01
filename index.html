@@ -14,9 +14,9 @@
       <div class="etapasGroup">
         <div class="etapaGroup">
           <label for="filiados">
-            Lista de atletas filiados (TicketSports):
+            Lista de atletas filiados (TicketSports CSV ou SporTickets XLSX):
           </label>
-          <input type="file" id="filiados" />
+          <input type="file" id="filiados" accept=".csv,.xlsx" />
           <input
           type="text"
           id="nomeCircuito"
@@ -58,6 +58,7 @@
       etapas)
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="ranking.js"></script>
   </body>
 </html>
